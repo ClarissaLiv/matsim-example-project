@@ -1,4 +1,4 @@
-package org.matsim.contrib.bicycle;
+package LinkPersonBasedScoring;
 
 import java.util.Random;
 

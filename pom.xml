@@ -44,6 +44,13 @@
 			<artifactId>matsim</artifactId>
 			<version>${matsim.version}</version>
 		</dependency>
+		
+		<dependency>
+			<!-- This is the matsim "bicycle": -->
+			<groupId>org.matsim.contrib</groupId>
+			<artifactId>bicycle</artifactId>
+			<version>${matsim.version}</version>
+		</dependency>
 
 		<dependency>
 			<!-- Include the JUnit testing library.  Not transitive. -->
