@@ -52,7 +52,7 @@ public class BicycleUtilityUtils{
 //double pavementComfortFactorCobblestoneAG2 = bicycleConfigGroup.getBetaCobblestoneAgeGroup2();
 
 
-		int ageGroupDummy2  = 0 ;
+//		int ageGroupDummy2  = 0 ;
 
 //debug
 		if(ageGroup == 1) {
@@ -60,7 +60,7 @@ public class BicycleUtilityUtils{
 //debug
 		if(localPavementDummyCobblestone == 1 && ageGroup == 2) {
 			Logger.getLogger( BicycleUtilityUtils.class ).warn("Found it!!" );
-			ageGroupDummy2=1 ;
+//			ageGroupDummy2=1 ;
 		}
 //debug
 		if(link.getId().equals(Id.createLinkId("6"))) {
@@ -68,8 +68,18 @@ public class BicycleUtilityUtils{
 		}
 
 // HOW I TRANSLATE OR PASS OR ENTER MY CHOICE MODEL TO THE SCORING FUNCTION - clivings April 2019
-		double comfortDisutility = pavementComfortParameter*(linkDistance/legDistance)+
-							     localPavementDummyCobblestone*ageGroupDummy2*pavementComfortFactorCobblestoneAG2*(linkDistance/legDistance);
+//		double comfortDisutility = pavementComfortParameter*(linkDistance/legDistance)+
+//							     localPavementDummyCobblestone*ageGroupDummy2*pavementComfortFactorCobblestoneAG2*(linkDistance/legDistance);
+
+		double comfortDisutility = pavementComfortParameter*(linkDistance/legDistance);
+
+		if ( ageGroup==2 && localPavementDummyCobblestone==1 ) {
+//			comfortDisutility += localPavementDummyCobblestone*pavementComfortFactorCobblestoneAG2*(linkDistance/legDistance);
+			comfortDisutility += 10 ;
+		}
+
+
+
 		return (comfortDisutility);
 	}
 
