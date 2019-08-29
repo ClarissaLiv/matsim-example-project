@@ -16,49 +16,34 @@
  *   See also COPYING, LICENSE and WARRANTY file                           *
  *                                                                         *
  * *********************************************************************** */
-package org.matsim.project;
+package LinkPersonBasedScoring;
 
-import org.matsim.api.core.v01.Scenario;
-import org.matsim.core.config.Config;
-import org.matsim.core.config.ConfigUtils;
-import org.matsim.core.controler.Controler;
-import org.matsim.core.gbl.Gbl;
-import org.matsim.core.scenario.ScenarioUtils;
+import org.matsim.contrib.bicycle.BicycleTravelTime;
+import org.matsim.contrib.bicycle.MotorizedInteractionEngine;
+import org.matsim.core.controler.AbstractModule;
 
 /**
- * @author nagel
- *
+ * @author smetzler, dziemke
  */
-public class RunMatsim{
+public class BicycleModule extends AbstractModule {
+	private boolean considerMotorizedInteraction;
+	
+	@Override
+	public void install() {
+		bind(BicycleTravelTime.class).asEagerSingleton();
+		addTravelTimeBinding("bicycle").to(BicycleTravelTime.class);
+		bind(BicycleTravelDisutilityFactory.class).asEagerSingleton();
+		addTravelDisutilityFactoryBinding("bicycle").to(BicycleTravelDisutilityFactory.class);
+		bindScoringFunctionFactory().toInstance(new BicycleScoringFunctionFactory());
+		// The following leads to "Tried proxying org.matsim.core.scoring.ScoringFunctionsForPopulation to support a circular dependency, but it is not an interface."
+//		bindScoringFunctionFactory().to(BicycleScoringFunctionFactory.class);
 
-	public static void main(String[] args) {
-		if ( args.length==0 ) {
-			args = new String [] { "scenarios/equil/config.xml" } ;
-		} else {
-			Gbl.assertIf( args[0] != null && !args[0].equals( "" ) );
+		if (considerMotorizedInteraction) {
+			addMobsimListenerBinding().to(MotorizedInteractionEngine.class);
 		}
-
-		Config config = ConfigUtils.loadConfig( args[0] ) ;
-		
-		// possibly modify config here
-		
-		// ---
-		
-		Scenario scenario = ScenarioUtils.loadScenario(config) ;
-		
-		// possibly modify scenario here
-		
-		// ---
-		
-		Controler controler = new Controler( scenario ) ;
-		
-		// possibly modify controler here
-
-//		controler.addOverridingModule( new OTFVisLiveModule() ) ;
-		
-		// ---
-		
-		controler.run();
 	}
 	
+	public void setConsiderMotorizedInteraction(boolean considerMotorizedInteraction) {
+		this.considerMotorizedInteraction = considerMotorizedInteraction;
+	}
 }
