@@ -37,8 +37,8 @@ import java.util.Random;
  * @author smetzler, dziemke
  * based on RandomizingTimeDistanceTravelDisutility and adding more components
  */
-public class BicycleTravelDisutility implements TravelDisutility {
-	private static final Logger LOG = Logger.getLogger( BicycleTravelDisutility.class );
+public class CLBicycleTravelDisutility implements TravelDisutility {
+	private static final Logger LOG = Logger.getLogger( CLBicycleTravelDisutility.class );
 
 	private final double marginalCostOfTime_s;
 	private final double marginalCostOfDistance_m;
@@ -63,8 +63,8 @@ public class BicycleTravelDisutility implements TravelDisutility {
 	private Person prevPerson;
 
 	
-	BicycleTravelDisutility( BicycleConfigGroup bicycleConfigGroup, PlanCalcScoreConfigGroup cnScoringGroup,
-					 PlansCalcRouteConfigGroup plansCalcRouteConfigGroup, TravelTime timeCalculator, double normalization ) {
+	CLBicycleTravelDisutility( BicycleConfigGroup bicycleConfigGroup, PlanCalcScoreConfigGroup cnScoringGroup,
+					   PlansCalcRouteConfigGroup plansCalcRouteConfigGroup, TravelTime timeCalculator, double normalization ) {
 		final PlanCalcScoreConfigGroup.ModeParams bicycleParams = cnScoringGroup.getModes().get("bicycle");
 		if (bicycleParams == null) {
 			throw new NullPointerException("Bicycle is not part of the valid mode parameters " + cnScoringGroup.getModes().keySet());
@@ -90,7 +90,7 @@ public class BicycleTravelDisutility implements TravelDisutility {
 	public double getLinkTravelDisutility(Link link, double time, Person person, Vehicle vehicle) {
 		//debug
 		if(link.getId().equals(Id.createLinkId("6"))) {
-			Logger.getLogger( BicycleTravelDisutility.class ).warn("Found it!!" );
+			Logger.getLogger( CLBicycleTravelDisutility.class ).warn("Found it!!" );
 		}
 		double travelTime = timeCalculator.getLinkTravelTime(link, time, person, vehicle);
 		
@@ -110,13 +110,13 @@ public class BicycleTravelDisutility implements TravelDisutility {
 		//in order to find the utility of an individual link? clivings April 2019
 		//For now, though, I'll leave this disutility calculation alone, since its main purpose is to find more
 		//"creative" routes. 
-		double comfortFactor = BicycleUtilityUtils.getComfortFactor(surface, type);
+		double comfortFactor = CLBicycleUtilityUtils.getComfortFactor(surface, type );
 		double comfortDisutility = marginalCostOfComfort_m * (1. - comfortFactor) * distance;
 		
-		double infrastructureFactor = BicycleUtilityUtils.getInfrastructureFactor(type, cyclewaytype);
+		double infrastructureFactor = CLBicycleUtilityUtils.getInfrastructureFactor(type, cyclewaytype );
 		double infrastructureDisutility = marginalCostOfInfrastructure_m * (1. - infrastructureFactor) * distance;
 		
-		double gradientFactor = BicycleUtilityUtils.getGradientFactor(link);
+		double gradientFactor = CLBicycleUtilityUtils.getGradientFactor(link );
 		double gradientDisutility = marginalCostOfGradient_m_100m * gradientFactor * distance;
 		
 //		LOG.warn("link = " + link.getId() + "-- travelTime = " + travelTime + " -- distance = " + distance + " -- comfortFactor = "

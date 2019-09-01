@@ -33,8 +33,8 @@ import com.google.inject.Inject;
 /**
  * @author smetzler, dziemke
  */
-public class BicycleTravelDisutilityFactory implements TravelDisutilityFactory {
-	private static final Logger LOG = Logger.getLogger(BicycleTravelDisutilityFactory.class);
+public class CLBicycleTravelDisutilityFactory implements TravelDisutilityFactory {
+	private static final Logger LOG = Logger.getLogger( CLBicycleTravelDisutilityFactory.class );
 
 	@Inject BicycleConfigGroup bicycleConfigGroup;
 	@Inject	PlanCalcScoreConfigGroup cnScoringGroup;
@@ -54,6 +54,6 @@ public class BicycleTravelDisutilityFactory implements TravelDisutilityFactory {
 				LOG.info(" sigma: " + sigma + "; resulting normalization: " + normalization);
 			}
 		}
-		return new BicycleTravelDisutility(bicycleConfigGroup, cnScoringGroup, plansCalcRouteConfigGroup, timeCalculator, normalization);
+		return new CLBicycleTravelDisutility(bicycleConfigGroup, cnScoringGroup, plansCalcRouteConfigGroup, timeCalculator, normalization);
 	}
 }

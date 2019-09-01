@@ -6,13 +6,12 @@ import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Person;
 
-import org.matsim.contrib.bicycle.BicycleConfigGroup;
 import org.matsim.contrib.bicycle.BicycleLabels;
 
-public class BicycleUtilityUtils{
-	private final Logger log = Logger.getLogger( BicycleUtilityUtils.class );
+public class CLBicycleUtilityUtils{
+	private final Logger log = Logger.getLogger( CLBicycleUtilityUtils.class );
 
-	public static double computeLinkBasedScore( Link link, Leg leg, BicycleConfigGroup bicycleConfigGroup, Person person, double marginalUtilityOfComfort_m,
+	public static double computeLinkBasedScore( Link link, Leg leg, CLBicycleConfigGroup bicycleConfigGroup, Person person, double marginalUtilityOfComfort_m,
 								  double marginalUtilityOfInfrastructure_m, double marginalUtilityOfGradient_m_100m, double pavementComfortFactorCobblestoneAG2) {
 
 		double comfortDisutility = calculateLinkComfortDisutility(link, leg, bicycleConfigGroup, person, marginalUtilityOfComfort_m, pavementComfortFactorCobblestoneAG2);
@@ -27,8 +26,8 @@ public class BicycleUtilityUtils{
 		return (infrastructureDisutility + comfortDisutility + gradientDisutility);
 	}
 
-	public static double calculateLinkComfortDisutility (Link link, Leg leg, BicycleConfigGroup bicycleConfigGroup, Person person, double marginalUtilityOfComfort_m,
-									     double pavementComfortFactorCobblestoneAG2) {
+	public static double calculateLinkComfortDisutility ( Link link, Leg leg, CLBicycleConfigGroup bicycleConfigGroup, Person person, double marginalUtilityOfComfort_m,
+										double pavementComfortFactorCobblestoneAG2) {
 		String surface = (String) link.getAttributes().getAttribute( BicycleLabels.SURFACE );
 		String type = (String) link.getAttributes().getAttribute("type");
 
@@ -40,9 +39,9 @@ public class BicycleUtilityUtils{
 		double localPavementDummyGravel = getPavementDummyGravel(surface, type);
 		double localPavementDummyCobblestone = getPavementDummyCobblestone(surface, type);
 
-		double pavementComfortParameter = BicycleUtilityUtils.getPavementComfortParameter(surface, type, bicycleConfigGroup );
+		double pavementComfortParameter = CLBicycleUtilityUtils.getPavementComfortParameter(surface, type, bicycleConfigGroup );
 
-		int ageGroup = Integer.parseInt(person.getAttributes().getAttribute(AssignPersonAttributes.AGE_GROUP_DUMMY_1).toString());
+		int ageGroup = Integer.parseInt(person.getAttributes().getAttribute( CLAssignPersonAttributes.AGE_GROUP_DUMMY_1 ).toString() );
 //		int ageGroupDummy2 = (int) person.getAttributes().getAttribute(AssignPersonAttributes.AGE_GROUP_DUMMY_2);
 //		int ageGroupDummy3 = (int) person.getAttributes().getAttribute(AssignPersonAttributes.AGE_GROUP_DUMMY_3);
 //		int ageGroupDummy4 = (int) person.getAttributes().getAttribute(AssignPersonAttributes.AGE_GROUP_DUMMY_4);
@@ -59,12 +58,12 @@ public class BicycleUtilityUtils{
 		}
 //debug
 		if(localPavementDummyCobblestone == 1 && ageGroup == 2) {
-			Logger.getLogger( BicycleUtilityUtils.class ).warn("Found it!!" );
+			Logger.getLogger( CLBicycleUtilityUtils.class ).warn("Found it!!" );
 //			ageGroupDummy2=1 ;
 		}
 //debug
 		if(link.getId().equals(Id.createLinkId("6"))) {
-			Logger.getLogger( BicycleUtilityUtils.class ).warn("Found it!!" );
+			Logger.getLogger( CLBicycleUtilityUtils.class ).warn("Found it!!" );
 		}
 
 // HOW I TRANSLATE OR PASS OR ENTER MY CHOICE MODEL TO THE SCORING FUNCTION - clivings April 2019
@@ -126,7 +125,7 @@ public class BicycleUtilityUtils{
 	}
 
 
-	public static double getPavementComfortParameter(String surface, String type, BicycleConfigGroup bicycleConfigGroup) {
+	public static double getPavementComfortParameter(String surface, String type, CLBicycleConfigGroup bicycleConfigGroup ) {
 		double pavementComfortFactor = 0.0;
 
 		if (surface != null) {

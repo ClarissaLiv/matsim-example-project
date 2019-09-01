@@ -25,7 +25,6 @@ import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Person;
-import org.matsim.contrib.bicycle.BicycleConfigGroup;
 import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.scoring.functions.CharyparNagelLegScoring;
 import org.matsim.core.scoring.functions.ScoringParameters;
@@ -37,18 +36,18 @@ import java.util.Set;
 /**
  * @author dziemke
  */
-public class BicycleLegScoring extends CharyparNagelLegScoring {
+public class CLBicycleLegScoring extends CharyparNagelLegScoring {
 	// private static final Logger LOG = Logger.getLogger(BicycleLegScoring.class);
 
 	private final double marginalUtilityOfInfrastructure_m;
 	private final double marginalUtilityOfComfort_m;
 	private final double marginalUtilityOfGradient_m_100m;
-	private final BicycleConfigGroup bicycleConfigGroup;
+	private final CLBicycleConfigGroup bicycleConfigGroup;
 	private final double pavementComfortFactorCobblestoneAG2;
 	private final Person person;
 
-	public BicycleLegScoring(final ScoringParameters params, Network network, Set<String> ptModes, BicycleConfigGroup bicycleConfigGroup, Person person) {
-		super(params, network, ptModes);
+	public CLBicycleLegScoring( final ScoringParameters params, Network network, Set<String> ptModes, CLBicycleConfigGroup bicycleConfigGroup, Person person ) {
+		super(params, network);
 
 		this.marginalUtilityOfInfrastructure_m = bicycleConfigGroup.getMarginalUtilityOfInfrastructure_m();
 		this.marginalUtilityOfComfort_m = bicycleConfigGroup.getMarginalUtilityOfComfort_m();
@@ -71,8 +70,8 @@ public class BicycleLegScoring extends CharyparNagelLegScoring {
 		
 		// Iterate over all links of the route
 		for (Id<Link> linkId : linkIds) {
-			double scoreOnLink = BicycleUtilityUtils.computeLinkBasedScore(network.getLinks().get(linkId), leg, bicycleConfigGroup, person,
-					marginalUtilityOfComfort_m, marginalUtilityOfInfrastructure_m, marginalUtilityOfGradient_m_100m, pavementComfortFactorCobblestoneAG2);
+			double scoreOnLink = CLBicycleUtilityUtils.computeLinkBasedScore(network.getLinks().get(linkId ), leg, bicycleConfigGroup, person,
+					marginalUtilityOfComfort_m, marginalUtilityOfInfrastructure_m, marginalUtilityOfGradient_m_100m, pavementComfortFactorCobblestoneAG2 );
 			// LOG.warn("----- link = " + linkId + " -- scoreOnLink = " + scoreOnLink);
 			legScore += scoreOnLink;
 		}

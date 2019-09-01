@@ -28,7 +28,6 @@ import org.matsim.api.core.v01.events.VehicleLeavesTrafficEvent;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Person;
-import org.matsim.contrib.bicycle.BicycleConfigGroup;
 import org.matsim.contrib.bicycle.MotorizedInteractionEvent;
 import org.matsim.contrib.bicycle.MotorizedInteractionEventHandler;
 import org.matsim.core.events.algorithms.Vehicle2DriverEventHandler;
@@ -48,13 +47,13 @@ import java.util.List;
  * This link-based scoring should be used when true times spent on an individual link are relevant
  * and for the scoring of the interaction with motorized traffic.
  */
-public class BicycleLinkScoring implements SumScoringFunction.ArbitraryEventScoring, SumScoringFunction.LegScoring, MotorizedInteractionEventHandler {
-	private static final Logger LOG = Logger.getLogger( BicycleLinkScoring.class );
+public class CLBicycleLinkScoring implements SumScoringFunction.ArbitraryEventScoring, SumScoringFunction.LegScoring, MotorizedInteractionEventHandler {
+	private static final Logger LOG = Logger.getLogger( CLBicycleLinkScoring.class );
 
 	protected final ScoringParameters params;
 
 	private Scenario scenario;
-	private BicycleConfigGroup bicycleConfigGroup;
+	private CLBicycleConfigGroup bicycleConfigGroup;
 	private Vehicle2DriverEventHandler vehicle2Driver = new Vehicle2DriverEventHandler();
 	private Id<Link> previousLink;
 	private double previousLinkRelativePosition;
@@ -71,7 +70,7 @@ public class BicycleLinkScoring implements SumScoringFunction.ArbitraryEventScor
 
 	private static int ccc=0 ;
 
-	public BicycleLinkScoring(final ScoringParameters params, Scenario scenario, BicycleConfigGroup bicycleConfigGroup) {
+	public CLBicycleLinkScoring( final ScoringParameters params, Scenario scenario, CLBicycleConfigGroup bicycleConfigGroup ) {
 		this.params = params;
 		this.scenario = scenario;
 		this.bicycleConfigGroup = bicycleConfigGroup;
@@ -107,8 +106,8 @@ public class BicycleLinkScoring implements SumScoringFunction.ArbitraryEventScor
 			this.score += carScoreOffset;
 			// LOG.warn("----- link = " + linkId + " -- car score offset = " + carScoreOffset);
 
-			double scoreOnLink = BicycleUtilityUtils.computeLinkBasedScore(scenario.getNetwork().getLinks().get(linkId), leg, bicycleConfigGroup, person,
-					marginalUtilityOfComfort_m, marginalUtilityOfInfrastructure_m, marginalUtilityOfGradient_m_100m, pavementComfortFactorCobblestoneAG2);
+			double scoreOnLink = CLBicycleUtilityUtils.computeLinkBasedScore(scenario.getNetwork().getLinks().get(linkId ), leg, bicycleConfigGroup, person,
+					marginalUtilityOfComfort_m, marginalUtilityOfInfrastructure_m, marginalUtilityOfGradient_m_100m, pavementComfortFactorCobblestoneAG2 );
 			// LOG.warn("----- link = " + linkId + " -- scoreOnLink = " + scoreOnLink);
 			this.score += scoreOnLink;
 

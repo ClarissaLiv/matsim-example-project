@@ -25,16 +25,16 @@ import org.matsim.core.controler.AbstractModule;
 /**
  * @author smetzler, dziemke
  */
-public class BicycleModule extends AbstractModule {
+public class CLBicycleModule extends AbstractModule {
 	private boolean considerMotorizedInteraction;
 	
 	@Override
 	public void install() {
 		bind(BicycleTravelTime.class).asEagerSingleton();
 		addTravelTimeBinding("bicycle").to(BicycleTravelTime.class);
-		bind(BicycleTravelDisutilityFactory.class).asEagerSingleton();
-		addTravelDisutilityFactoryBinding("bicycle").to(BicycleTravelDisutilityFactory.class);
-		bindScoringFunctionFactory().toInstance(new BicycleScoringFunctionFactory());
+		bind( CLBicycleTravelDisutilityFactory.class ).asEagerSingleton();
+		addTravelDisutilityFactoryBinding("bicycle").to( CLBicycleTravelDisutilityFactory.class );
+		bindScoringFunctionFactory().toInstance(new CLBicycleScoringFunctionFactory() );
 		// The following leads to "Tried proxying org.matsim.core.scoring.ScoringFunctionsForPopulation to support a circular dependency, but it is not an interface."
 //		bindScoringFunctionFactory().to(BicycleScoringFunctionFactory.class);
 

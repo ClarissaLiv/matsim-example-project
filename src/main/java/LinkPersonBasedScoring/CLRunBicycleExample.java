@@ -41,8 +41,8 @@ import java.util.List;
 /**
  * @author dziemke
  */
-public class RunBicycleExample{
-	private static final Logger LOG = Logger.getLogger( RunBicycleExample.class );
+public class CLRunBicycleExample{
+	private static final Logger LOG = Logger.getLogger( CLRunBicycleExample.class );
 
 	// the program needs to do the following:
 	// (1) assign values to population members
@@ -57,7 +57,7 @@ public class RunBicycleExample{
 		config.network().setInputFile( "network_centerCobblestone.xml.gz" );
 		config.plans().setInputFile( "population_1200.xml" );
 
-		config.controler().setLastIteration(100); // Modify if motorized interaction is used
+		config.controler().setLastIteration(100);
 
 		config.global().setNumberOfThreads(1);
 		config.controler().setOverwriteFileSetting(OverwriteFileSetting.deleteDirectoryIfExists);
@@ -66,38 +66,31 @@ public class RunBicycleExample{
 
 		config.qsim().setVehiclesSource(QSimConfigGroup.VehiclesSource.modeVehicleTypesFromVehiclesData);
 
-		boolean considerMotorizedInteraction = false ;
+		// ---
 
-		new RunBicycleExample().run(config, considerMotorizedInteraction ) ;
-	}
+		Scenario scenario = ScenarioUtils.loadScenario( config );
+		{
+			VehicleType car = VehicleUtils.getFactory().createVehicleType( Id.create( TransportMode.car , VehicleType.class ) );
+			scenario.getVehicles().addVehicleType( car );
+		}
+		{
+			VehicleType bicycle = VehicleUtils.getFactory().createVehicleType( Id.create( "bicycle" , VehicleType.class ) );
+			bicycle.setMaximumVelocity( 20.0 / 3.6 );
+			bicycle.setPcuEquivalents( 0.25 );
+			scenario.getVehicles().addVehicleType( bicycle );
+		}
+		CLAssignPersonAttributes.main(scenario ) ;
 
-	public void run(Config config, boolean considerMotorizedInteraction) {
-
-
-		Scenario scenario = ScenarioUtils.loadScenario(config);
-
-		VehicleType car = VehicleUtils.getFactory().createVehicleType(Id.create(TransportMode.car, VehicleType.class));
-		scenario.getVehicles().addVehicleType(car);
-
-		VehicleType bicycle = VehicleUtils.getFactory().createVehicleType(Id.create("bicycle", VehicleType.class));
-		bicycle.setMaximumVelocity(20.0/3.6);
-		bicycle.setPcuEquivalents(0.25);
-		scenario.getVehicles().addVehicleType(bicycle);
-
-		AssignPersonAttributes.main(scenario) ;
-
-
+		// ---
 
 		Controler controler = new Controler(scenario);
-		BicycleModule bicycleModule = new BicycleModule();
-		if (considerMotorizedInteraction) {
-			bicycleModule.setConsiderMotorizedInteraction(true);
-		}
-		controler.addOverridingModule(bicycleModule);
-		
+		controler.addOverridingModule( new CLBicycleModule() );
+
+		// ---
+
 		controler.run();
 	}
-	
+
 	public static void fillConfigWithBicycleStandardValues(Config config) {
 		config.controler().setWriteEventsInterval(1);
 

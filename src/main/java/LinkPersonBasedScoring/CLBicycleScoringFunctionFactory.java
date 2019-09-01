@@ -19,11 +19,10 @@
  * *********************************************************************** */
 package LinkPersonBasedScoring;
 
+import LinkPersonBasedScoring.CLBicycleConfigGroup.BicycleScoringType;
 import com.google.inject.Inject;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.population.Person;
-import org.matsim.contrib.bicycle.BicycleConfigGroup;
-import org.matsim.contrib.bicycle.BicycleConfigGroup.BicycleScoringType;
 import org.matsim.contrib.bicycle.BicycleTravelTime;
 import org.matsim.contrib.bicycle.MotorizedInteractionEvent;
 import org.matsim.contrib.bicycle.MotorizedInteractionEventHandler;
@@ -39,7 +38,7 @@ import org.matsim.core.scoring.functions.ScoringParametersForPerson;
 /**
  * @author dziemke
  */
-public class BicycleScoringFunctionFactory implements ScoringFunctionFactory {
+public class CLBicycleScoringFunctionFactory implements ScoringFunctionFactory {
 	@Inject ScoringParametersForPerson parameters;
 	
 	@Inject Scenario scenario;
@@ -55,12 +54,12 @@ public class BicycleScoringFunctionFactory implements ScoringFunctionFactory {
 		sumScoringFunction.addScoringFunction(new CharyparNagelActivityScoring(params)) ;
 		sumScoringFunction.addScoringFunction(new CharyparNagelAgentStuckScoring(params));
 
-		BicycleConfigGroup bicycleConfigGroup = (BicycleConfigGroup) scenario.getConfig().getModule("bicycle");
+		CLBicycleConfigGroup bicycleConfigGroup = (CLBicycleConfigGroup) scenario.getConfig().getModule("bicycle" );
 		BicycleScoringType bicycleScoringType = bicycleConfigGroup.getBicycleScoringType();
 		if (bicycleScoringType == BicycleScoringType.legBased) {
-			sumScoringFunction.addScoringFunction(new BicycleLegScoring(params, scenario.getNetwork(), scenario.getConfig().transit().getTransitModes(), bicycleConfigGroup, person));
+			sumScoringFunction.addScoringFunction(new CLBicycleLegScoring(params, scenario.getNetwork(), scenario.getConfig().transit().getTransitModes(), bicycleConfigGroup, person) );
 		} else if (bicycleScoringType == BicycleScoringType.linkBased) {
-			BicycleLinkScoring bicycleLinkScoring = new BicycleLinkScoring(params, scenario, bicycleConfigGroup);
+			CLBicycleLinkScoring bicycleLinkScoring = new CLBicycleLinkScoring(params, scenario, bicycleConfigGroup);
 			sumScoringFunction.addScoringFunction(bicycleLinkScoring);
 
 			CarCounter carCounter = new CarCounter(bicycleLinkScoring);
@@ -75,9 +74,9 @@ public class BicycleScoringFunctionFactory implements ScoringFunctionFactory {
 
 
 	private class CarCounter implements MotorizedInteractionEventHandler {
-		private BicycleLinkScoring bicycleLinkScoring;
+		private CLBicycleLinkScoring bicycleLinkScoring;
 
-		public CarCounter(BicycleLinkScoring bicycleLinkScoring) {
+		public CarCounter( CLBicycleLinkScoring bicycleLinkScoring ) {
 			this.bicycleLinkScoring = bicycleLinkScoring;
 		}
 
