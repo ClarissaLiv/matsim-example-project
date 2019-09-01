@@ -25,6 +25,9 @@ import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Person;
+import org.matsim.contrib.bicycle.BicycleConfigGroup;
+import org.matsim.core.config.Config;
+import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.scoring.functions.CharyparNagelLegScoring;
 import org.matsim.core.scoring.functions.ScoringParameters;
@@ -36,24 +39,27 @@ import java.util.Set;
 /**
  * @author dziemke
  */
-public class CLBicycleLegScoring extends CharyparNagelLegScoring {
+class CLBicycleLegScoring extends CharyparNagelLegScoring {
 	// private static final Logger LOG = Logger.getLogger(BicycleLegScoring.class);
 
 	private final double marginalUtilityOfInfrastructure_m;
 	private final double marginalUtilityOfComfort_m;
 	private final double marginalUtilityOfGradient_m_100m;
-	private final CLBicycleConfigGroup bicycleConfigGroup;
+	private final BicycleConfigGroup bicycleConfigGroup;
 	private final double pavementComfortFactorCobblestoneAG2;
 	private final Person person;
+	private final CLBicycleConfigGroup clBicycleConfigGroup;
 
-	public CLBicycleLegScoring( final ScoringParameters params, Network network, Set<String> ptModes, CLBicycleConfigGroup bicycleConfigGroup, Person person ) {
+	CLBicycleLegScoring( final ScoringParameters params , Network network , Set<String> ptModes , Person person ,
+				   Config config ) {
 		super(params, network);
 
+		this.bicycleConfigGroup = ConfigUtils.addOrGetModule( config, BicycleConfigGroup.class ) ;
 		this.marginalUtilityOfInfrastructure_m = bicycleConfigGroup.getMarginalUtilityOfInfrastructure_m();
 		this.marginalUtilityOfComfort_m = bicycleConfigGroup.getMarginalUtilityOfComfort_m();
 		this.marginalUtilityOfGradient_m_100m = bicycleConfigGroup.getMarginalUtilityOfGradient_m_100m();
-		this.bicycleConfigGroup = bicycleConfigGroup;
-		this.pavementComfortFactorCobblestoneAG2 = bicycleConfigGroup.getBetaCobblestoneAgeGroup2();
+		this.clBicycleConfigGroup = ConfigUtils.addOrGetModule( config, CLBicycleConfigGroup.class ) ;
+		this.pavementComfortFactorCobblestoneAG2 = clBicycleConfigGroup.getBetaCobblestoneAgeGroup2();
 		this.person = person;
 	
 	}
@@ -71,7 +77,8 @@ public class CLBicycleLegScoring extends CharyparNagelLegScoring {
 		// Iterate over all links of the route
 		for (Id<Link> linkId : linkIds) {
 			double scoreOnLink = CLBicycleUtilityUtils.computeLinkBasedScore(network.getLinks().get(linkId ), leg, bicycleConfigGroup, person,
-					marginalUtilityOfComfort_m, marginalUtilityOfInfrastructure_m, marginalUtilityOfGradient_m_100m, pavementComfortFactorCobblestoneAG2 );
+					marginalUtilityOfComfort_m, marginalUtilityOfInfrastructure_m, marginalUtilityOfGradient_m_100m,
+				  pavementComfortFactorCobblestoneAG2 , clBicycleConfigGroup );
 			// LOG.warn("----- link = " + linkId + " -- scoreOnLink = " + scoreOnLink);
 			legScore += scoreOnLink;
 		}

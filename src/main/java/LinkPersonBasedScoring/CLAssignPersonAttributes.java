@@ -5,7 +5,7 @@ import org.matsim.api.core.v01.population.Person;
 
 import java.util.Random;
 
-public class CLAssignPersonAttributes{
+ class CLAssignPersonAttributes{
 
 	static final String AGE_GROUP_DUMMY_1 = "ageGroupDummy_1";
 //	static final String AGE_GROUP_DUMMY_2 = "ageGroupDummy_2";

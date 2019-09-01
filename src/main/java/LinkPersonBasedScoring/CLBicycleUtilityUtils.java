@@ -5,16 +5,20 @@ import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Person;
+import org.matsim.contrib.bicycle.BicycleConfigGroup;
+import org.matsim.contrib.bicycle.BicycleUtils;
 
-import org.matsim.contrib.bicycle.BicycleLabels;
+class CLBicycleUtilityUtils{
+	private static final Logger log = Logger.getLogger( CLBicycleUtilityUtils.class );
 
-public class CLBicycleUtilityUtils{
-	private final Logger log = Logger.getLogger( CLBicycleUtilityUtils.class );
+	public static double computeLinkBasedScore( Link link , Leg leg , BicycleConfigGroup bicycleConfigGroup , Person person ,
+								  double marginalUtilityOfComfort_m ,
+								  double marginalUtilityOfInfrastructure_m , double marginalUtilityOfGradient_m_100m ,
+								  double pavementComfortFactorCobblestoneAG2 ,
+								  CLBicycleConfigGroup clBicycleConfigGroup ) {
 
-	public static double computeLinkBasedScore( Link link, Leg leg, CLBicycleConfigGroup bicycleConfigGroup, Person person, double marginalUtilityOfComfort_m,
-								  double marginalUtilityOfInfrastructure_m, double marginalUtilityOfGradient_m_100m, double pavementComfortFactorCobblestoneAG2) {
-
-		double comfortDisutility = calculateLinkComfortDisutility(link, leg, bicycleConfigGroup, person, marginalUtilityOfComfort_m, pavementComfortFactorCobblestoneAG2);
+		double comfortDisutility = calculateLinkComfortDisutility(link, leg, clBicycleConfigGroup, person, marginalUtilityOfComfort_m,
+			  pavementComfortFactorCobblestoneAG2);
 
 //Currently I do not wish to use the infrastructure and gradient disutilities, since these were not considered in my survey. clivings April 2019
 //double infrastructureDisutility = calculateLinkInfrastructureDisutility(link, leg, bicycleConfigGroup, person, marginalUtilityOfInfrastructure_m);
@@ -26,9 +30,10 @@ public class CLBicycleUtilityUtils{
 		return (infrastructureDisutility + comfortDisutility + gradientDisutility);
 	}
 
-	public static double calculateLinkComfortDisutility ( Link link, Leg leg, CLBicycleConfigGroup bicycleConfigGroup, Person person, double marginalUtilityOfComfort_m,
-										double pavementComfortFactorCobblestoneAG2) {
-		String surface = (String) link.getAttributes().getAttribute( BicycleLabels.SURFACE );
+	private static double calculateLinkComfortDisutility( Link link , Leg leg , CLBicycleConfigGroup clBicycleConfigGroup , Person person ,
+										double marginalUtilityOfComfort_m ,
+										double pavementComfortFactorCobblestoneAG2 ) {
+		String surface = (String) link.getAttributes().getAttribute( BicycleUtils.SURFACE );
 		String type = (String) link.getAttributes().getAttribute("type");
 
 		double linkDistance = link.getLength();
@@ -39,9 +44,9 @@ public class CLBicycleUtilityUtils{
 		double localPavementDummyGravel = getPavementDummyGravel(surface, type);
 		double localPavementDummyCobblestone = getPavementDummyCobblestone(surface, type);
 
-		double pavementComfortParameter = CLBicycleUtilityUtils.getPavementComfortParameter(surface, type, bicycleConfigGroup );
+		double pavementComfortParameter = CLBicycleUtilityUtils.getPavementComfortParameter(surface, type, clBicycleConfigGroup );
 
-		int ageGroup = Integer.parseInt(person.getAttributes().getAttribute( CLAssignPersonAttributes.AGE_GROUP_DUMMY_1 ).toString() );
+		Integer ageGroup = (Integer) person.getAttributes().getAttribute( CLAssignPersonAttributes.AGE_GROUP_DUMMY_1 );
 //		int ageGroupDummy2 = (int) person.getAttributes().getAttribute(AssignPersonAttributes.AGE_GROUP_DUMMY_2);
 //		int ageGroupDummy3 = (int) person.getAttributes().getAttribute(AssignPersonAttributes.AGE_GROUP_DUMMY_3);
 //		int ageGroupDummy4 = (int) person.getAttributes().getAttribute(AssignPersonAttributes.AGE_GROUP_DUMMY_4);
@@ -50,6 +55,15 @@ public class CLBicycleUtilityUtils{
 //TODO does this factor for ag2 and cobblestone need to be a method input? Like passed from the outside?
 //double pavementComfortFactorCobblestoneAG2 = bicycleConfigGroup.getBetaCobblestoneAgeGroup2();
 
+		double comfortDisutility = pavementComfortParameter*(linkDistance/legDistance);
+
+		if ( link.getId().toString().equals( "6" )) {
+			log.warn("comfortDisutility=" + comfortDisutility + "; linkId=" + link.getId() ) ;
+		}
+
+		if ( ageGroup==null ) {
+			return comfortDisutility ;
+		}
 
 //		int ageGroupDummy2  = 0 ;
 
@@ -58,19 +72,18 @@ public class CLBicycleUtilityUtils{
 		}
 //debug
 		if(localPavementDummyCobblestone == 1 && ageGroup == 2) {
-			Logger.getLogger( CLBicycleUtilityUtils.class ).warn("Found it!!" );
+			log.warn("Found it!!" );
 //			ageGroupDummy2=1 ;
 		}
 //debug
 		if(link.getId().equals(Id.createLinkId("6"))) {
-			Logger.getLogger( CLBicycleUtilityUtils.class ).warn("Found it!!" );
+			log.warn("Found it!!" );
 		}
 
 // HOW I TRANSLATE OR PASS OR ENTER MY CHOICE MODEL TO THE SCORING FUNCTION - clivings April 2019
 //		double comfortDisutility = pavementComfortParameter*(linkDistance/legDistance)+
 //							     localPavementDummyCobblestone*ageGroupDummy2*pavementComfortFactorCobblestoneAG2*(linkDistance/legDistance);
 
-		double comfortDisutility = pavementComfortParameter*(linkDistance/legDistance);
 
 		if ( ageGroup==2 && localPavementDummyCobblestone==1 ) {
 //			comfortDisutility += localPavementDummyCobblestone*pavementComfortFactorCobblestoneAG2*(linkDistance/legDistance);

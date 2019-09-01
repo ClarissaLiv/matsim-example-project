@@ -33,7 +33,7 @@ import com.google.inject.Inject;
 /**
  * @author smetzler, dziemke
  */
-public class CLBicycleTravelDisutilityFactory implements TravelDisutilityFactory {
+class CLBicycleTravelDisutilityFactory implements TravelDisutilityFactory {
 	private static final Logger LOG = Logger.getLogger( CLBicycleTravelDisutilityFactory.class );
 
 	@Inject BicycleConfigGroup bicycleConfigGroup;

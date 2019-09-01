@@ -18,20 +18,33 @@
  * *********************************************************************** */
 package LinkPersonBasedScoring;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.TransportMode;
-import org.matsim.contrib.bicycle.BicycleConfigGroup;
+import org.matsim.api.core.v01.network.Link;
+import org.matsim.api.core.v01.population.Person;
+import org.matsim.contrib.bicycle.*;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup.ActivityParams;
 import org.matsim.core.config.groups.PlanCalcScoreConfigGroup.ModeParams;
 import org.matsim.core.config.groups.QSimConfigGroup;
 import org.matsim.core.config.groups.StrategyConfigGroup.StrategySettings;
+import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.controler.OutputDirectoryHierarchy.OverwriteFileSetting;
+import org.matsim.core.gbl.Gbl;
 import org.matsim.core.scenario.ScenarioUtils;
+import org.matsim.core.scoring.ScoringFunction;
+import org.matsim.core.scoring.ScoringFunctionFactory;
+import org.matsim.core.scoring.SumScoringFunction;
+import org.matsim.core.scoring.functions.CharyparNagelActivityScoring;
+import org.matsim.core.scoring.functions.CharyparNagelAgentStuckScoring;
+import org.matsim.core.scoring.functions.ScoringParameters;
+import org.matsim.core.scoring.functions.ScoringParametersForPerson;
 import org.matsim.vehicles.VehicleType;
 import org.matsim.vehicles.VehicleUtils;
 
@@ -41,7 +54,7 @@ import java.util.List;
 /**
  * @author dziemke
  */
-public class CLRunBicycleExample{
+class CLRunBicycleExample{
 	private static final Logger LOG = Logger.getLogger( CLRunBicycleExample.class );
 
 	// the program needs to do the following:
@@ -52,23 +65,67 @@ public class CLRunBicycleExample{
 
 	public static void main(String[] args) {
 
-		Config config = ConfigUtils.createConfig( "TestParamInput/" ) ;
-		fillConfigWithBicycleStandardValues( config );
-		config.network().setInputFile( "network_centerCobblestone.xml.gz" );
-		config.plans().setInputFile( "population_1200.xml" );
-
-		config.controler().setLastIteration(100);
-
-		config.global().setNumberOfThreads(1);
-		config.controler().setOverwriteFileSetting(OverwriteFileSetting.deleteDirectoryIfExists);
-
-		config.plansCalcRoute().setRoutingRandomness(3.);
-
-		config.qsim().setVehiclesSource(QSimConfigGroup.VehiclesSource.modeVehicleTypesFromVehiclesData);
+		Config config = prepareConfig();
 
 		// ---
 
+		Scenario scenario = prepareScenario( config );
+
+		// ---
+
+		Controler controler = prepareControler( scenario );
+
+		// ---
+
+		controler.run();
+	}
+
+	static Controler prepareControler( Scenario scenario ){
+		Controler controler = new Controler(scenario);
+		controler.addOverridingModule( new AbstractModule(){
+
+			@Override
+			public void install() {
+				addTravelTimeBinding("bicycle").to( BicycleTravelTime.class ).in( Singleton.class ) ;
+				bind( BicycleLinkSpeedCalculator.class ).to( BicycleLinkSpeedCalculatorDefaultImpl.class ) ;
+
+				addTravelDisutilityFactoryBinding("bicycle").to( CLBicycleTravelDisutilityFactory.class ).in( Singleton.class ) ;
+
+				bindScoringFunctionFactory().toInstance( new ScoringFunctionFactory(){
+					@Inject ScoringParametersForPerson parameters;
+					@Inject Scenario scenario;
+
+					@Override
+					public ScoringFunction createNewScoringFunction( Person person ) {
+						SumScoringFunction sumScoringFunction = new SumScoringFunction();
+
+						final ScoringParameters params = parameters.getScoringParameters(person );
+						sumScoringFunction.addScoringFunction(new CharyparNagelActivityScoring(params) ) ;
+						sumScoringFunction.addScoringFunction(new CharyparNagelAgentStuckScoring(params) );
+
+						CLBicycleConfigGroup bicycleConfigGroup = ConfigUtils.addOrGetModule( scenario.getConfig() , CLBicycleConfigGroup.class );;
+						Gbl.assertIf( bicycleConfigGroup.getBicycleScoringType()== CLBicycleConfigGroup.BicycleScoringType.legBased );
+						// the other execution paths do not exist in this implementation.  kai, sep'19
+
+						sumScoringFunction.addScoringFunction(new CLBicycleLegScoring(params, scenario.getNetwork(), scenario.getConfig().transit().getTransitModes(),
+							  person , scenario.getConfig() ) );
+
+						return sumScoringFunction;
+					}
+
+				} );
+			}
+		} );
+		controler.addOverridingQSimModule(new BicycleQSimModule());
+		return controler;
+	}
+
+	static Scenario prepareScenario( Config config ){
 		Scenario scenario = ScenarioUtils.loadScenario( config );
+		for( Link link : scenario.getNetwork().getLinks().values() ){
+			link.getAttributes().putAttribute( BicycleUtils.BICYCLE_INFRASTRUCTURE_SPEED_FACTOR, 1. ) ;
+			// (needed in 12.x. kai, sep'19)
+		}
 		{
 			VehicleType car = VehicleUtils.getFactory().createVehicleType( Id.create( TransportMode.car , VehicleType.class ) );
 			scenario.getVehicles().addVehicleType( car );
@@ -79,61 +136,72 @@ public class CLRunBicycleExample{
 			bicycle.setPcuEquivalents( 0.25 );
 			scenario.getVehicles().addVehicleType( bicycle );
 		}
-		CLAssignPersonAttributes.main(scenario ) ;
-
-		// ---
-
-		Controler controler = new Controler(scenario);
-		controler.addOverridingModule( new CLBicycleModule() );
-
-		// ---
-
-		controler.run();
+//		CLAssignPersonAttributes.main(scenario ) ;
+		return scenario;
 	}
 
-	public static void fillConfigWithBicycleStandardValues(Config config) {
-		config.controler().setWriteEventsInterval(1);
+	static Config prepareConfig(){
+		Config config = ConfigUtils.createConfig( "TestParamInput/" ) ;
+		config.network().setInputFile( "network_centerCobblestone.xml.gz" );
+		config.plans().setInputFile( "population_1200.xml" );
 
-		BicycleConfigGroup bicycleConfigGroup = ConfigUtils.addOrGetModule( config, BicycleConfigGroup.class );
+		config.controler().setLastIteration(100);
 
-//		BicycleConfigGroup bicycleConfigGroup = (BicycleConfigGroup) config.getModules().get(BicycleConfigGroup.GROUP_NAME);
-		bicycleConfigGroup.addParam("marginalUtilityOfInfrastructure_m", "-0.0002");
-		bicycleConfigGroup.addParam("marginalUtilityOfComfort_m", "-0.0002");
-		bicycleConfigGroup.addParam("marginalUtilityOfGradient_m_100m", "-0.02");
-		
+		config.global().setNumberOfThreads(1);
+		config.controler().setOverwriteFileSetting( OverwriteFileSetting.deleteDirectoryIfExists );
+
+		config.plansCalcRoute().setRoutingRandomness(3.);
+
+		config.qsim().setVehiclesSource( QSimConfigGroup.VehiclesSource.modeVehicleTypesFromVehiclesData );
+
+		config.controler().setWriteEventsInterval(1 );
+
+		BicycleConfigGroup bicycleConfigGroup = ConfigUtils.addOrGetModule( config, BicycleConfigGroup.class ) ;
+
+		CLBicycleConfigGroup clBicycleConfigGroup = ConfigUtils.addOrGetModule( config , CLBicycleConfigGroup.class );
+
+		clBicycleConfigGroup.setMarginalUtilityOfInfrastructure_m( -0.0002 );
+		clBicycleConfigGroup.setMarginalUtilityOfComfort_m(  -0.0002 );
+		clBicycleConfigGroup.setMarginalUtilityOfGradient_m_100m( -0.02 );
+		clBicycleConfigGroup.setBetaCobblestone( -10. );
+
 		List<String> mainModeList = new ArrayList<>();
 		mainModeList.add("bicycle");
-		mainModeList.add(TransportMode.car);
-		config.qsim().setMainModes(mainModeList);
-		
-		config.strategy().setMaxAgentPlanMemorySize(5);
+		mainModeList.add( TransportMode.car );
+		config.qsim().setMainModes(mainModeList );
+
 		{
 			StrategySettings strategySettings = new StrategySettings();
 			strategySettings.setStrategyName("ChangeExpBeta");
 			strategySettings.setWeight(0.8);
-			config.strategy().addStrategySettings(strategySettings);
-		}{
+			config.strategy().addStrategySettings(strategySettings );
+		}
+		{
 			StrategySettings strategySettings = new StrategySettings();
 			strategySettings.setStrategyName("ReRoute");
 			strategySettings.setWeight(0.2);
-			config.strategy().addStrategySettings(strategySettings);
+			config.strategy().addStrategySettings(strategySettings );
 		}
-		
-		ActivityParams homeActivity = new ActivityParams("home");
-		homeActivity.setTypicalDuration(12*60*60);
-		config.planCalcScore().addActivityParams(homeActivity);
-		
-		ActivityParams workActivity = new ActivityParams("work");
-		workActivity.setTypicalDuration(8*60*60);
-		config.planCalcScore().addActivityParams(workActivity);
-		
-		ModeParams bicycle = new ModeParams("bicycle");
-		bicycle.setConstant(0.);
-		bicycle.setMarginalUtilityOfDistance(-0.0004); // util/m
-		bicycle.setMarginalUtilityOfTraveling(-6.0); // util/h
-		bicycle.setMonetaryDistanceRate(0.);
-		config.planCalcScore().addModeParams(bicycle);
-		
-		config.plansCalcRoute().setNetworkModes(mainModeList);
+		{
+			ActivityParams homeActivity = new ActivityParams( "home" );
+			homeActivity.setTypicalDuration( 12 * 60 * 60 );
+			config.planCalcScore().addActivityParams( homeActivity );
+		}
+		{
+			ActivityParams workActivity = new ActivityParams( "work" );
+			workActivity.setTypicalDuration( 8 * 60 * 60 );
+			config.planCalcScore().addActivityParams( workActivity );
+		}
+		{
+			ModeParams bicycle1 = new ModeParams( "bicycle" );
+			bicycle1.setConstant( 0. );
+			bicycle1.setMarginalUtilityOfDistance( -0.0004 ); // util/m
+			bicycle1.setMarginalUtilityOfTraveling( -6.0 ); // util/h
+			bicycle1.setMonetaryDistanceRate( 0. );
+			config.planCalcScore().addModeParams( bicycle1 );
+		}
+		config.plansCalcRoute().setNetworkModes(mainModeList );
+		return config;
 	}
+
 }
