@@ -87,19 +87,24 @@ class CLRunBicycleExample{
 
 			@Override
 			public void install() {
+
+				// A travel time that uses BicycleLinkSpeedCalculator, but is not sensitive to congestion:
 				addTravelTimeBinding("bicycle").to( BicycleTravelTime.class ).in( Singleton.class ) ;
+
+				// the default BicycleLinkSpeedCalculator has speed dependent on surface.  CL does not want this (?):
 				bind( BicycleLinkSpeedCalculator.class ).toInstance( new BicycleLinkSpeedCalculator(){
 					@Override public double getMaximumVelocityForLink( Link link ){
 						return link.getFreespeed() ;
 					}
-
 					@Override public double getMaximumVelocity( QVehicle vehicle , Link link , double time ){
 						return link.getFreespeed() ;
 					}
 				} );
 
-				addTravelDisutilityFactoryBinding("bicycle").to( CLBicycleTravelDisutilityFactory.class ).in( Singleton.class ) ;
+				// use default travel disutility.  This may not work forever, but for the time being we hope that the randomizing router is enough. 
+				addTravelDisutilityFactoryBinding("bicycle").to( BicycleTravelDisutilityFactory.class ).in( Singleton.class ) ;
 
+				// use CL leg scoring:
 				bindScoringFunctionFactory().toInstance( new ScoringFunctionFactory(){
 					@Inject ScoringParametersForPerson parameters;
 					@Inject Scenario scenario;
@@ -116,8 +121,7 @@ class CLRunBicycleExample{
 						Gbl.assertIf( bicycleConfigGroup.getBicycleScoringType()== CLBicycleConfigGroup.BicycleScoringType.legBased );
 						// the other execution paths do not exist in this implementation.  kai, sep'19
 
-						sumScoringFunction.addScoringFunction(new CLBicycleLegScoring(params, scenario.getNetwork(), scenario.getConfig().transit().getTransitModes(),
-							  person , scenario.getConfig() ) );
+						sumScoringFunction.addScoringFunction(new CLBicycleLegScoring(params, person , scenario ) );
 
 						return sumScoringFunction;
 					}

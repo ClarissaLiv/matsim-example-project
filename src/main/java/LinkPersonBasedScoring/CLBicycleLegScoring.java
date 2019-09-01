@@ -21,6 +21,7 @@
 package LinkPersonBasedScoring;
 
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.Scenario;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Leg;
@@ -50,10 +51,10 @@ class CLBicycleLegScoring extends CharyparNagelLegScoring {
 	private final Person person;
 	private final CLBicycleConfigGroup clBicycleConfigGroup;
 
-	CLBicycleLegScoring( final ScoringParameters params , Network network , Set<String> ptModes , Person person ,
-				   Config config ) {
-		super(params, network);
+	CLBicycleLegScoring( final ScoringParameters params , Person person , Scenario scenario ) {
+		super(params, scenario.getNetwork());
 
+		Config config = scenario.getConfig() ;
 		this.bicycleConfigGroup = ConfigUtils.addOrGetModule( config, BicycleConfigGroup.class ) ;
 		this.marginalUtilityOfInfrastructure_m = bicycleConfigGroup.getMarginalUtilityOfInfrastructure_m();
 		this.marginalUtilityOfComfort_m = bicycleConfigGroup.getMarginalUtilityOfComfort_m();
