@@ -20,8 +20,10 @@
 
 package LinkPersonBasedScoring;
 
+import org.apache.log4j.Logger;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
+import org.matsim.api.core.v01.events.Event;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.population.Leg;
@@ -30,18 +32,20 @@ import org.matsim.contrib.bicycle.BicycleConfigGroup;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.population.routes.NetworkRoute;
+import org.matsim.core.scoring.SumScoringFunction;
 import org.matsim.core.scoring.functions.CharyparNagelLegScoring;
 import org.matsim.core.scoring.functions.ScoringParameters;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author dziemke
  */
-class CLBicycleLegScoring extends CharyparNagelLegScoring {
-	// private static final Logger LOG = Logger.getLogger(BicycleLegScoring.class);
+class CLBicycleLegScoring implements SumScoringFunction.LegScoring, SumScoringFunction.ArbitraryEventScoring {
+	private static final Logger log = Logger.getLogger(CLBicycleLegScoring.class );
+
+	private final CharyparNagelLegScoring delegate ;
 
 	private final double marginalUtilityOfInfrastructure_m;
 	private final double marginalUtilityOfComfort_m;
@@ -50,9 +54,11 @@ class CLBicycleLegScoring extends CharyparNagelLegScoring {
 	private final double pavementComfortFactorCobblestoneAG2;
 	private final Person person;
 	private final CLBicycleConfigGroup clBicycleConfigGroup;
+	private final Network network;
+	private double additionalScore;
 
 	CLBicycleLegScoring( final ScoringParameters params , Person person , Scenario scenario ) {
-		super(params, scenario.getNetwork());
+		delegate = new CharyparNagelLegScoring( params, scenario.getNetwork() ) ;
 
 		Config config = scenario.getConfig() ;
 		this.bicycleConfigGroup = ConfigUtils.addOrGetModule( config, BicycleConfigGroup.class ) ;
@@ -62,37 +68,38 @@ class CLBicycleLegScoring extends CharyparNagelLegScoring {
 		this.clBicycleConfigGroup = ConfigUtils.addOrGetModule( config, CLBicycleConfigGroup.class ) ;
 		this.pavementComfortFactorCobblestoneAG2 = clBicycleConfigGroup.getBetaCobblestoneAgeGroup2();
 		this.person = person;
+		this.network = scenario.getNetwork() ;
 	
 	}
-	protected double calcLegScore(final double departureTime, final double arrivalTime, final Leg leg, final Person person) {
-		// Get leg score from regular CharyparNagelLegScoring
-		double legScore = super.calcLegScore(departureTime, arrivalTime, leg);
-		// LOG.warn("----- legScore = " + legScore);
-		
+
+	@Override
+	public void handleLeg(Leg leg) {
+		delegate.handleLeg( leg ) ;
+
 		NetworkRoute networkRoute = (NetworkRoute) leg.getRoute();
-		
-		List<Id<Link>> linkIds = new ArrayList<>();
-		linkIds.addAll(networkRoute.getLinkIds());
+
+		List<Id<Link>> linkIds = new ArrayList<>( networkRoute.getLinkIds() );
 		linkIds.add(networkRoute.getEndLinkId());
-		
+
 		// Iterate over all links of the route
+		double legScore = 0. ;
 		for (Id<Link> linkId : linkIds) {
-			double scoreOnLink = CLBicycleUtilityUtils.computeLinkBasedScore(network.getLinks().get(linkId ), leg, bicycleConfigGroup, person,
-					marginalUtilityOfComfort_m, marginalUtilityOfInfrastructure_m, marginalUtilityOfGradient_m_100m,
-				  pavementComfortFactorCobblestoneAG2 , clBicycleConfigGroup );
+			double scoreOnLink = CLBicycleUtilityUtils.computeLinkBasedScore(network.getLinks().get(linkId ), leg , person ,
+				  clBicycleConfigGroup );
 			// LOG.warn("----- link = " + linkId + " -- scoreOnLink = " + scoreOnLink);
 			legScore += scoreOnLink;
 		}
-		return legScore;
-	}
-	
-	@Override
-	public void handleLeg(Leg leg) {
-		// TODO Auto-generated method stub
-		//super.handleLeg(leg);
-		double legScore = calcLegScore(leg.getDepartureTime(), leg.getDepartureTime() + leg.getTravelTime(), leg, person);
-		this.score+= legScore;
+		this.additionalScore += legScore;
 	}
 
-	
+
+	@Override public void finish(){
+		delegate.finish();
+	}
+	@Override public double getScore(){
+		return this.additionalScore + delegate.getScore();
+	}
+	@Override public void handleEvent( Event event ){
+		delegate.handleEvent( event );
+	}
 }

@@ -101,7 +101,7 @@ class CLRunBicycleExample{
 					}
 				} );
 
-				// use default travel disutility.  This may not work forever, but for the time being we hope that the randomizing router is enough. 
+				// use default travel disutility.  This may not work forever, but for the time being we hope that the randomizing router is enough.
 				addTravelDisutilityFactoryBinding("bicycle").to( BicycleTravelDisutilityFactory.class ).in( Singleton.class ) ;
 
 				// use CL leg scoring:
