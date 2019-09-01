@@ -37,6 +37,7 @@ import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.controler.OutputDirectoryHierarchy.OverwriteFileSetting;
 import org.matsim.core.gbl.Gbl;
+import org.matsim.core.mobsim.qsim.qnetsimengine.QVehicle;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.scoring.ScoringFunction;
 import org.matsim.core.scoring.ScoringFunctionFactory;
@@ -87,7 +88,15 @@ class CLRunBicycleExample{
 			@Override
 			public void install() {
 				addTravelTimeBinding("bicycle").to( BicycleTravelTime.class ).in( Singleton.class ) ;
-				bind( BicycleLinkSpeedCalculator.class ).to( BicycleLinkSpeedCalculatorDefaultImpl.class ) ;
+				bind( BicycleLinkSpeedCalculator.class ).toInstance( new BicycleLinkSpeedCalculator(){
+					@Override public double getMaximumVelocityForLink( Link link ){
+						return link.getFreespeed() ;
+					}
+
+					@Override public double getMaximumVelocity( QVehicle vehicle , Link link , double time ){
+						return link.getFreespeed() ;
+					}
+				} );
 
 				addTravelDisutilityFactoryBinding("bicycle").to( CLBicycleTravelDisutilityFactory.class ).in( Singleton.class ) ;
 

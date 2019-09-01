@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
+import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.api.core.v01.population.Plan;
@@ -16,9 +17,14 @@ import org.matsim.core.controler.events.IterationEndsEvent;
 import org.matsim.core.controler.events.ShutdownEvent;
 import org.matsim.core.controler.listener.IterationEndsListener;
 import org.matsim.core.controler.listener.ShutdownListener;
+import org.matsim.core.gbl.Gbl;
 import org.matsim.core.population.routes.NetworkRoute;
 import org.matsim.core.router.TripStructureUtils;
 import org.matsim.testcases.MatsimTestUtils;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -39,32 +45,45 @@ public class CLRunBicycleExampleTest{
 			@Override public void install(){
 				this.addControlerListenerBinding().toInstance( new ShutdownListener(){
 					@Override public void notifyShutdown( ShutdownEvent event ) {
+						List<Id<Link>> linkIdsToTest = new ArrayList<>() ;
+						for ( int ii=2 ; ii<=10 ; ii++ ) {
+							linkIdsToTest.add( Id.createLinkId( ii ) ) ;
+						}
 						for( Person person : scenario.getPopulation().getPersons().values() ){
 							for( Plan plan : person.getPlans() ){
-								boolean isUsingLink3 = false ;
-								boolean isUsingLink6 = false ;
-								boolean isUsingLink9 = false ;
+								Id<Link> usedLinkId = null ;
 								for( Leg leg : TripStructureUtils.getLegs( plan ) ){
 									Route route = leg.getRoute();;
 									if ( route instanceof NetworkRoute ) {
-										if ( ((NetworkRoute) route).getLinkIds().contains( Id.createLinkId(6) ) ) {
-											isUsingLink6=true ;
-											break ;
-										} else if ( ((NetworkRoute) route).getLinkIds().contains( Id.createLinkId( 9 ) ) ) {
-											isUsingLink9 = true ;
-											break ;
-										} else if ( ((NetworkRoute) route).getLinkIds().contains( Id.createLinkId( 3 ) ) ) {
-											isUsingLink3 = true ;
-											break ;
+										for( Id<Link> linkId : linkIdsToTest ){
+											if ( ((NetworkRoute) route).getLinkIds().contains( linkId ) ) {
+												usedLinkId = linkId ;
+												break ;
+											}
 										}
 									}
 								}
-								if ( isUsingLink6 ){
-									Assert.assertEquals( 48.5 , plan.getScore() , 0.5 );
-								} else if ( isUsingLink9 || isUsingLink3) {
-									Assert.assertEquals( 51.0 , plan.getScore() , 0.5 );
-								} else {
-									Assert.assertEquals( 52.5, plan.getScore(), 0.5 );
+								Gbl.assertNotNull( usedLinkId );
+								switch( usedLinkId.toString() ) {
+									case "2":
+									case "10":
+										Assert.fail(  );
+										break ;
+									case "3":
+									case "9":
+										Assert.assertEquals( 83.4, plan.getScore(), 0.5 );
+										break ;
+									case "4":
+									case "8":
+										Assert.assertEquals( 84.0, plan.getScore(), 0.5 );
+										break ;
+									case "5":
+									case "7":
+										Assert.assertEquals( 84.4, plan.getScore(), 0.5 );
+										break ;
+									case "6":
+										Assert.assertEquals( 80.2, plan.getScore(), 0.5 );
+										break ;
 								}
 							}
 						}

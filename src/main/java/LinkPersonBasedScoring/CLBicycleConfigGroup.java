@@ -28,6 +28,7 @@ import java.util.TreeMap;
  * @author smetzler, dziemke
  */
 public class CLBicycleConfigGroup extends ReflectiveConfigGroup {
+	// needs to be public since otherwise the annotations don't work
 
 	public static final String GROUP_NAME = "clbicycle";
 

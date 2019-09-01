@@ -57,7 +57,8 @@ class CLBicycleUtilityUtils{
 
 		double comfortDisutility = pavementComfortParameter*(linkDistance/legDistance);
 
-		if ( link.getId().toString().equals( "6" )) {
+//		if ( link.getId().toString().equals( "6" )) {
+		if ( comfortDisutility!=0. ) {
 			log.warn("comfortDisutility=" + comfortDisutility + "; linkId=" + link.getId() ) ;
 		}
 
